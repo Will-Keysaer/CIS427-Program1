@@ -107,4 +107,39 @@ public class StockDB {
             System.out.println("SQLException: " + e.getMessage());
         }
     }
+
+    public static Stock getStockByUserAndSymbol(int userId, String symbol) {
+        try (Connection connection = getConnection()) {
+            String query = "SELECT * FROM Stocks WHERE user_id = ? AND stock_symbol = ?";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, userId);
+            stmt.setString(2, symbol);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Stock(
+                        rs.getInt("ID"),
+                        rs.getString("stock_symbol"),
+                        rs.getString("stock_name"),
+                        rs.getDouble("stock_balance"),
+                        rs.getInt("user_id")
+                );
+            }
+        } catch (SQLException e) {
+            System.out.println("SQLException: " + e.getMessage());
+        }
+        return null; // stock not found
+    }
+
+    public static void updateStock(Stock stock) {
+        try (Connection connection = getConnection()) {
+            String query = "UPDATE Stocks SET stock_balance = ? WHERE ID = ?";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setDouble(1, stock.getStockBalance());
+            stmt.setInt(2, stock.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("SQLException: " + e.getMessage());
+        }
+    }
 }
