@@ -2,6 +2,10 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
+/**
+ * Server class that listens for incoming socket connections on a predefined port
+ * and processes commands received from connected client.
+ */
 public class Server {
 
     public static final int SERVER_PORT = 4080;
@@ -12,7 +16,7 @@ public class Server {
 
             System.out.println("Server listening on port " + SERVER_PORT);
 
-            // Ensure at least one user exists
+            // Ensure at least one user exists if the table is initially empty
             ArrayList<User> users = StockDB.getUsers();
             if (users.isEmpty()) {
                 System.out.println("No users found. Creating default user...");
@@ -26,6 +30,7 @@ public class Server {
                 StockDB.addUser(defaultUser);
             }
 
+            // Run indefinitely to accept and handle incoming client connections.
             while (true) {
 
                 Socket clientSocket = serverSocket.accept();
@@ -38,6 +43,7 @@ public class Server {
 
                 String line;
 
+                // Process each line of input from the connected client.
                 while ((line = in.readLine()) != null) {
 
                     System.out.println("Received: " + line);
@@ -71,18 +77,31 @@ public class Server {
         }
     }
 
+    /**
+     *  Processes a single textual trading command that follows a structured BUY request format.
+     */
+
     private static String processCommand(String request) {
 
         try {
+            // Split the request by whitespace, trim any leading/trailing spaces first.
             String[] parts = request.trim().split(" ");
             String command = parts[0].toUpperCase();
 
             switch (command) {
 
+                /** /////////////////////////////////////////////////////////////////////////////////////
+                 * BUY command handler
+                 * Expected format: “BUY” followed by a space,
+                 * followed by a stock_symbol, followed by a space, followed by a stock_amount, followed by
+                 * a space, followed by the price per stock, followed by a User_ID, and followed by the
+                 * newline character (i.e., '\n').
+                 *///////////////////////////////////////////////////////////////////////////////////////
                 case "BUY":
                     if (parts.length != 5)
                         return "400 Invalid BUY format";
 
+                    //parse command parameters
                     String buySymbol = parts[1];
                     double buyAmount = Double.parseDouble(parts[2]);
                     double buyPrice = Double.parseDouble(parts[3]);
@@ -94,9 +113,11 @@ public class Server {
 
                     double totalCost = buyAmount * buyPrice;
 
+                    // Ensure the user has sufficient funds before proceeding.
                     if (buyUser.getBalance() < totalCost)
                         return "Insufficient funds.";
 
+                    //update user balance
                     double newBalance = buyUser.getBalance() - totalCost;
                     StockDB.updateUserBalance(buyUserId, newBalance);
 
@@ -106,52 +127,70 @@ public class Server {
                     Stock stock;
 
                     if (buyStocks.isEmpty()) {
+                        // No existing stock: create a new stock row with the purchased amount.
                         stock = new Stock(0, buySymbol, buySymbol,
                                 buyAmount, buyUserId);
                         StockDB.addStock(stock);
                     } else {
+                        // Otherwise, append the amount to an existing position.
                         stock = buyStocks.get(0);
                         stock.setStockBalance(
                                 stock.getStockBalance() + buyAmount);
                         StockDB.updateStock(stock);
                     }
 
+                    // Return a success response with the new USD balance
                     return "200 OK\nBOUGHT: New balance: "
                             + buyAmount + " " + buySymbol
                             + ". USD balance $"
                             + String.format("%.2f", newBalance);
 
+                /** /////////////////////////////////////////////////////////////////////////////////////
+                 * SELL command handler
+                 * Expected format: “SELL” followed by a space,
+                 * followed by a stock_symbol, followed by a space, followed by stock price, followed by a
+                 * space, followed by a stock_amount, followed by a space, followed by a User_ID, and
+                 * followed by the newline character (i.e., '\n').
+                 *///////////////////////////////////////////////////////////////////////////////////////
 
                 case "SELL":
-                    if (parts.length != 5)
+                    if (parts.length != 5) {
                         return "400 Invalid SELL format";
+                    }
 
+                    //parse command SELL command parameters
                     String sellSymbol = parts[1];
                     double sellAmount = Double.parseDouble(parts[2]);
                     double sellPrice = Double.parseDouble(parts[3]);
                     int sellUserId = Integer.parseInt(parts[4]);
 
                     User sellUser = StockDB.getUserByID(sellUserId);
-                    if (sellUser == null)
+                    if (sellUser == null) {
                         return "User not found.";
+                    }
 
                     ArrayList<Stock> sellStocks =
                             StockDB.getStockByUserAndSymbol(sellUserId, sellSymbol);
 
+                    //Validate that user owns enough stock
                     if (sellStocks.isEmpty() ||
-                            sellStocks.get(0).getStockBalance() < sellAmount)
+                            sellStocks.get(0).getStockBalance() < sellAmount) {
                         return "Not enough " + sellSymbol + " stock balance.";
+                    }
 
                     Stock sellStock = sellStocks.get(0);
 
+                    //sell stock and update stock balance
                     sellStock.setStockBalance(
                             sellStock.getStockBalance() - sellAmount);
                     StockDB.updateStock(sellStock);
 
+                    //calculate stock earnings and update user USD balance
                     double totalGain = sellAmount * sellPrice;
                     double updatedBalance = sellUser.getBalance() + totalGain;
                     StockDB.updateUserBalance(sellUserId, updatedBalance);
 
+                    //return success statement
                     return "200 OK\nSOLD: New balance: "
                             + sellStock.getStockBalance() + " "
                             + sellSymbol

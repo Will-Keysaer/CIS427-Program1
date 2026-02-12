@@ -12,9 +12,10 @@ public class StockDB {
         try {
             Connection connection = getConnection();
 
-            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Users (email, first_name, last_name, user_name, password, usd_balance) values (?, ?, ?, ?, ?, ?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Users (email, first_name, last_name, " +
+                    "user_name, password, usd_balance) values (?, ?, ?, ?, ?, ?)");
 
-            // first value is index 1, it's ok to cry
+
             preparedStatement.setString(1, user.getEmail());
             preparedStatement.setString(2, user.getFirstName());
             preparedStatement.setString(3, user.getLastName());
@@ -34,17 +35,17 @@ public class StockDB {
         ArrayList<User> users = new ArrayList<>();
         try {
             Connection connection = getConnection();
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM Users");
-            while (rs.next()) {
+            Statement preparedStatement = connection.createStatement();
+            ResultSet userQuery = preparedStatement.executeQuery("SELECT * FROM Users");
+            while (userQuery.next()) {
                 users.add(new User(
-                        rs.getInt("ID"),
-                        rs.getString("email"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name"),
-                        rs.getString("user_name"),
-                        rs.getString("password"),
-                        rs.getDouble("usd_balance")
+                        userQuery.getInt("ID"),
+                        userQuery.getString("email"),
+                        userQuery.getString("first_name"),
+                        userQuery.getString("last_name"),
+                        userQuery.getString("user_name"),
+                        userQuery.getString("password"),
+                        userQuery.getDouble("usd_balance")
                 ));
             }
             connection.close();
@@ -97,12 +98,12 @@ public class StockDB {
 
     public static void updateUserBalance(int id, double newBalance) {
         try (Connection connection = getConnection()) {
-            PreparedStatement stmt = connection.prepareStatement(
+            PreparedStatement PreparedStatement = connection.prepareStatement(
                     "UPDATE Users SET usd_balance = ? WHERE ID = ?"
             );
-            stmt.setDouble(1, newBalance);
-            stmt.setInt(2, id);
-            stmt.executeUpdate();
+            PreparedStatement.setDouble(1, newBalance);
+            PreparedStatement.setInt(2, id);
+            PreparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("SQLException: " + e.getMessage());
         }
@@ -112,31 +113,31 @@ public class StockDB {
         ArrayList<Stock> stocks = new ArrayList<>();
         try {
             Connection connection = getConnection();
-            PreparedStatement stmt;
+            PreparedStatement PreparedStatement;
 
             if (stockSymbol == null) {
                 // If symbol is null, get all stocks for this user
-                stmt = connection.prepareStatement(
+                PreparedStatement = connection.prepareStatement(
                         "SELECT * FROM Stocks WHERE user_id = ?"
                 );
-                stmt.setInt(1, userId);
+                PreparedStatement.setInt(1, userId);
             } else {
                 // Otherwise, get only the matching stock
-                stmt = connection.prepareStatement(
+                PreparedStatement = connection.prepareStatement(
                         "SELECT * FROM Stocks WHERE user_id = ? AND stock_symbol = ?"
                 );
-                stmt.setInt(1, userId);
-                stmt.setString(2, stockSymbol);
+                PreparedStatement.setInt(1, userId);
+                PreparedStatement.setString(2, stockSymbol);
             }
 
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
+            ResultSet stockQuery = PreparedStatement.executeQuery();
+            while (stockQuery.next()) {
                 stocks.add(new Stock(
-                        rs.getInt("ID"),
-                        rs.getString("stock_symbol"),
-                        rs.getString("stock_name"),
-                        rs.getDouble("stock_balance"),
-                        rs.getInt("user_id")
+                        stockQuery.getInt("ID"),
+                        stockQuery.getString("stock_symbol"),
+                        stockQuery.getString("stock_name"),
+                        stockQuery.getDouble("stock_balance"),
+                        stockQuery.getInt("user_id")
                 ));
             }
 
@@ -152,10 +153,10 @@ public class StockDB {
     public static void updateStock(Stock stock) {
         try (Connection connection = getConnection()) {
             String query = "UPDATE Stocks SET stock_balance = ? WHERE ID = ?";
-            PreparedStatement stmt = connection.prepareStatement(query);
-            stmt.setDouble(1, stock.getStockBalance());
-            stmt.setInt(2, stock.getId());
-            stmt.executeUpdate();
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setDouble(1, stock.getStockBalance());
+            preparedStatement.setInt(2, stock.getId());
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("SQLException: " + e.getMessage());
         }

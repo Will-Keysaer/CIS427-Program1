@@ -19,25 +19,16 @@ public class Stock {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public String getStockSymbol() {
         return stockSymbol;
     }
 
-    public void setStockSymbol(String stockSymbol) {
-        this.stockSymbol = stockSymbol;
-    }
 
     public String getStockName() {
         return stockName;
     }
 
-    public void setStockName(String stockName) {
-        this.stockName = stockName;
-    }
 
     public double getStockBalance() {
         return stockBalance;
@@ -51,9 +42,6 @@ public class Stock {
         return userID;
     }
 
-    public void setUserID(int userID) {
-        this.userID = userID;
-    }
 
     @Override
     public String toString() {

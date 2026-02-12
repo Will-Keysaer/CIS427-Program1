@@ -20,9 +20,8 @@ public class Client {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
             String line;
-            boolean running = true;
 
-            while (running && (line = userInput.readLine()) != null) {
+            while ((line = userInput.readLine()) != null) {
                 // Check for quit command before sending
                 if (line.equalsIgnoreCase("QUIT")) {
                     out.println(line); // tell server we're quitting
