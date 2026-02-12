@@ -1,10 +1,16 @@
 import java.sql.*;
 import java.util.ArrayList;
 
+/**
+ * StockDB - Database access layer for managing users and stocks in a stock exchange system.
+ * This class provides static methods to interact with an SQLite database for user and stock operations.
+ */
+
 public class StockDB {
 
+    //Establishes and returns a connection to the SQLite database.
     private static Connection getConnection() throws SQLException {
-        String dbUrl = "jdbc:sqlite:stock_exchange.db"; // match your file name
+        String dbUrl = "jdbc:sqlite:stock_exchange.db";
         return DriverManager.getConnection(dbUrl);
     }
 
@@ -12,10 +18,12 @@ public class StockDB {
         try {
             Connection connection = getConnection();
 
+            // Prepare SQL insert statement with parameter placeholders
             PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Users (email, first_name, last_name, " +
                     "user_name, password, usd_balance) values (?, ?, ?, ?, ?, ?)");
 
 
+            // Set parameter values from the User object
             preparedStatement.setString(1, user.getEmail());
             preparedStatement.setString(2, user.getFirstName());
             preparedStatement.setString(3, user.getLastName());
@@ -25,18 +33,30 @@ public class StockDB {
 
             preparedStatement.execute();
 
+            // Close the database connection
             connection.close();
         } catch (SQLException e) {
             System.out.println("SQLException: " + e.getMessage());
         }
     }
 
+    /**
+     * Retrieves all users from the Users table.
+     *
+     * @return ArrayList<User> containing all users in the database
+     */
     public static ArrayList<User> getUsers() {
         ArrayList<User> users = new ArrayList<>();
         try {
             Connection connection = getConnection();
+
+            // Create statement for executing SQL query
             Statement preparedStatement = connection.createStatement();
+
+
             ResultSet userQuery = preparedStatement.executeQuery("SELECT * FROM Users");
+
+            // Iterate through result set and create User objects
             while (userQuery.next()) {
                 users.add(new User(
                         userQuery.getInt("ID"),
@@ -55,12 +75,20 @@ public class StockDB {
         return users;
     }
 
+    /**
+     * Adds a new stock to the Stocks table in the database.
+     *
+     * @param stock The Stock object containing stock details to be inserted
+     */
     public static void addStock(Stock stock) {
         try {
             Connection connection = getConnection();
+
+            // Prepare SQL insert statement for stocks
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "INSERT INTO Stocks (stock_symbol, stock_name, stock_balance, user_id) VALUES (?, ?, ?, ?)");
 
+            // Set parameter values from the Stock object
             preparedStatement.setString(1, stock.getStockSymbol());
             preparedStatement.setString(2, stock.getStockName());
             preparedStatement.setDouble(3, stock.getStockBalance());
@@ -73,21 +101,31 @@ public class StockDB {
         }
     }
 
+    /**
+     * Retrieves a user by their unique ID from the Users table.
+     *
+     * @param id The unique identifier of the user to retrieve
+     * @return User object if found, null if no user exists with the given ID
+     */
     public static User getUserByID(int id) {
         User user = null;
         try (Connection connection = getConnection()) {
+
+            // Prepare parameterized query to find user by ID
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM Users WHERE ID = ?");
             preparedStatement.setInt(1, id);
-            ResultSet rs = preparedStatement.executeQuery();
-            if (rs.next()) {
+            ResultSet userIDQuery = preparedStatement.executeQuery();
+
+            // If a user is found, create User object from result set
+            if (userIDQuery.next()) {
                 user = new User(
-                        rs.getInt("ID"),
-                        rs.getString("email"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name"),
-                        rs.getString("user_name"),
-                        rs.getString("password"),
-                        rs.getDouble("usd_balance")
+                        userIDQuery.getInt("ID"),
+                        userIDQuery.getString("email"),
+                        userIDQuery.getString("first_name"),
+                        userIDQuery.getString("last_name"),
+                        userIDQuery.getString("user_name"),
+                        userIDQuery.getString("password"),
+                        userIDQuery.getDouble("usd_balance")
                 );
             }
         } catch (SQLException e) {
@@ -96,8 +134,16 @@ public class StockDB {
         return user;
     }
 
+    /**
+     * Updates the USD balance of a specific user in the database.
+     *
+     * @param id The unique identifier of the user to update
+     * @param newBalance The new USD balance to set for the user
+     */
     public static void updateUserBalance(int id, double newBalance) {
         try (Connection connection = getConnection()) {
+
+            // Prepare update statement for user balance
             PreparedStatement PreparedStatement = connection.prepareStatement(
                     "UPDATE Users SET usd_balance = ? WHERE ID = ?"
             );
@@ -109,6 +155,14 @@ public class StockDB {
         }
     }
 
+    /**
+     * Retrieves stocks for a specific user, optionally filtered by stock symbol.
+     * If stockSymbol is null, returns all stocks for the user.
+     *
+     * @param userId The unique identifier of the user
+     * @param stockSymbol The stock symbol to filter by (can be null for all stocks)
+     * @return ArrayList<Stock> containing matching stocks for the user
+     */
     public static ArrayList<Stock> getStockByUserAndSymbol(int userId, String stockSymbol) {
         ArrayList<Stock> stocks = new ArrayList<>();
         try {
@@ -130,6 +184,7 @@ public class StockDB {
                 PreparedStatement.setString(2, stockSymbol);
             }
 
+            // Execute query and process results
             ResultSet stockQuery = PreparedStatement.executeQuery();
             while (stockQuery.next()) {
                 stocks.add(new Stock(

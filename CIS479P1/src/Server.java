@@ -25,7 +25,7 @@ public class Server {
                         "John",
                         "Doe",
                         "johndoe",
-                        "password",
+                        "12345",
                         100.0);
                 StockDB.addUser(defaultUser);
             }
@@ -99,7 +99,7 @@ public class Server {
                  *///////////////////////////////////////////////////////////////////////////////////////
                 case "BUY":
                     if (parts.length != 5)
-                        return "400 Invalid BUY format";
+                        return "403 message format error";
 
                     //parse command parameters
                     String buySymbol = parts[1];
@@ -107,15 +107,16 @@ public class Server {
                     double buyPrice = Double.parseDouble(parts[3]);
                     int buyUserId = Integer.parseInt(parts[4]);
 
+                    //Ensure User exists. return error statement if not.
                     User buyUser = StockDB.getUserByID(buyUserId);
                     if (buyUser == null)
-                        return "User not found.";
+                        return "400 invalid command. User not found.";
 
                     double totalCost = buyAmount * buyPrice;
 
                     // Ensure the user has sufficient funds before proceeding.
                     if (buyUser.getBalance() < totalCost)
-                        return "Insufficient funds.";
+                        return "400 invalid command. Not enough USD.";
 
                     //update user balance
                     double newBalance = buyUser.getBalance() - totalCost;
@@ -155,7 +156,7 @@ public class Server {
 
                 case "SELL":
                     if (parts.length != 5) {
-                        return "400 Invalid SELL format";
+                        return "403 message format error";
                     }
 
                     //parse command SELL command parameters
@@ -166,7 +167,7 @@ public class Server {
 
                     User sellUser = StockDB.getUserByID(sellUserId);
                     if (sellUser == null) {
-                        return "User not found.";
+                        return "400 invalid command. User not found.";
                     }
 
                     ArrayList<Stock> sellStocks =
@@ -175,7 +176,7 @@ public class Server {
                     //Validate that user owns enough stock
                     if (sellStocks.isEmpty() ||
                             sellStocks.get(0).getStockBalance() < sellAmount) {
-                        return "Not enough " + sellSymbol + " stock balance.";
+                        return "400 invalid command. Not enough " + sellSymbol + " stock balance.";
                     }
 
                     Stock sellStock = sellStocks.get(0);
@@ -197,13 +198,22 @@ public class Server {
                             + ". USD balance $"
                             + String.format("%.2f", updatedBalance);
 
-
+                /** /////////////////////////////////////////////////////////////////////////////////////
+                 * LIST command handler
+                 *///////////////////////////////////////////////////////////////////////////////////////
                 case "LIST":
+                    //format error handling
                     if (parts.length != 2)
-                        return "400 Invalid LIST format";
+                        return "403 message format error";
 
+                    //Ensure User exists. return error statement if not.
                     int listUserId = Integer.parseInt(parts[1]);
+                    User listUser = StockDB.getUserByID(listUserId);
+                    if (listUser == null) {
+                        return "400 invalid command. User not found.";
+                    }
 
+                    //add stocks to array and list them
                     ArrayList<Stock> stocks = StockDB.getStockByUserAndSymbol(listUserId, null);
 
                     StringBuilder sb = new StringBuilder();
@@ -224,16 +234,21 @@ public class Server {
 
                     return sb.toString();
 
-
+                /** /////////////////////////////////////////////////////////////////////////////////////
+                 * BALANCE command handler
+                 *///////////////////////////////////////////////////////////////////////////////////////
                 case "BALANCE":
-                    if (parts.length != 2)
-                        return "400 Invalid BALANCE format";
+                    //format error handling
+                    if (parts.length != 2) {
+                        return "403 message format error";
+                    }
 
+                    //Ensure User exists. return error statement if not.
                     int balanceUserId = Integer.parseInt(parts[1]);
                     User balanceUser = StockDB.getUserByID(balanceUserId);
-
-                    if (balanceUser == null)
-                        return "User not found.";
+                    if (balanceUser == null) {
+                        return "400 invalid command. User not found.";
+                    }
 
                     return "200 OK\nBalance for user "
                             + balanceUser.getFirstName() + " "
