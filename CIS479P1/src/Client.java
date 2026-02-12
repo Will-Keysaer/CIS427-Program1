@@ -3,7 +3,7 @@ import java.net.*;
 
 public class Client {
 
-    public static final int SERVER_PORT = 5432;
+    public static final int SERVER_PORT = 4080;
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -20,19 +20,36 @@ public class Client {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
             String line;
-            while ((line = userInput.readLine()) != null) {
+            boolean running = true;
+
+            while (running && (line = userInput.readLine()) != null) {
+                // Check for quit command before sending
+                if (line.equalsIgnoreCase("QUIT")) {
+                    out.println(line); // tell server we're quitting
+                    System.out.println("You have disconnected from the server.");
+                    break; // exit input loop
+                }
+
                 out.println(line); // send command to server
 
                 // Read multi-line response from server
                 String response;
                 while ((response = in.readLine()) != null) {
                     System.out.println(response);
-                    if (!in.ready()) break; // stop if no more lines
+
+                    // If server closes socket (after SHUTDOWN), in.readLine() will return null
+                    if (!in.ready()) break;
+                }
+
+                // Check if server closed the connection
+                if (!socket.isConnected() || socket.isClosed()) {
+                    System.out.println("Server has shut down. Connection closed.");
+                    break;
                 }
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Connection to server lost.");
         }
     }
 }

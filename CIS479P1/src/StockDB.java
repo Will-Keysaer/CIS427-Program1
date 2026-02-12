@@ -108,28 +108,46 @@ public class StockDB {
         }
     }
 
-    public static Stock getStockByUserAndSymbol(int userId, String symbol) {
-        try (Connection connection = getConnection()) {
-            String query = "SELECT * FROM Stocks WHERE user_id = ? AND stock_symbol = ?";
-            PreparedStatement stmt = connection.prepareStatement(query);
-            stmt.setInt(1, userId);
-            stmt.setString(2, symbol);
+    public static ArrayList<Stock> getStockByUserAndSymbol(int userId, String stockSymbol) {
+        ArrayList<Stock> stocks = new ArrayList<>();
+        try {
+            Connection connection = getConnection();
+            PreparedStatement stmt;
+
+            if (stockSymbol == null) {
+                // If symbol is null, get all stocks for this user
+                stmt = connection.prepareStatement(
+                        "SELECT * FROM Stocks WHERE user_id = ?"
+                );
+                stmt.setInt(1, userId);
+            } else {
+                // Otherwise, get only the matching stock
+                stmt = connection.prepareStatement(
+                        "SELECT * FROM Stocks WHERE user_id = ? AND stock_symbol = ?"
+                );
+                stmt.setInt(1, userId);
+                stmt.setString(2, stockSymbol);
+            }
 
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new Stock(
+            while (rs.next()) {
+                stocks.add(new Stock(
                         rs.getInt("ID"),
                         rs.getString("stock_symbol"),
                         rs.getString("stock_name"),
                         rs.getDouble("stock_balance"),
                         rs.getInt("user_id")
-                );
+                ));
             }
+
+            connection.close();
         } catch (SQLException e) {
             System.out.println("SQLException: " + e.getMessage());
         }
-        return null; // stock not found
+
+        return stocks;
     }
+
 
     public static void updateStock(Stock stock) {
         try (Connection connection = getConnection()) {
